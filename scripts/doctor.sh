@@ -16,14 +16,8 @@ BOLD='\033[1m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
 DIM='\033[2m'
 RESET='\033[0m'
-
-PASS="${GREEN}PASS${RESET}"
-FAIL="${RED}FAIL${RESET}"
-WARN="${YELLOW}WARN${RESET}"
-SKIP="${DIM}SKIP${RESET}"
 
 RESULTS=()
 FAILURES=0
@@ -179,10 +173,10 @@ else
 fi
 
 # 10. Hermes config
-if [ -f ~/.hermes/config.yaml ]; then
-    record "PASS" "~/.hermes/config.yaml" "present"
+if [ -f "$HOME/.hermes/config.yaml" ]; then
+    record "PASS" "$HOME/.hermes/config.yaml" "present"
 else
-    record "WARN" "~/.hermes/config.yaml" "missing — run: ./scripts/setup.sh"
+    record "WARN" "$HOME/.hermes/config.yaml" "missing — run: ./scripts/setup.sh"
 fi
 
 # 11. Model files
@@ -195,11 +189,11 @@ else
 fi
 
 # 12. Hermes memories
-MEMORY_COUNT=$(find ~/.hermes/memories 2>/dev/null -type f | wc -l | tr -d ' ')
-record "PASS" "hermes memories dir" "$MEMORY_COUNT file(s) in ~/.hermes/memories/"
+MEMORY_COUNT=$(find ~/.hermes/memories -type f 2>/dev/null | wc -l | tr -d ' ')
+record "PASS" "hermes memories dir" "$MEMORY_COUNT file(s) in $HOME/.hermes/memories/"
 
 # 13. Hermes skills
-SKILL_COUNT=$(find ~/.hermes/skills 2>/dev/null -type d -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')
+SKILL_COUNT=$(find ~/.hermes/skills -type d -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
 record "PASS" "hermes skills dir" "$SKILL_COUNT skill(s) in ~/.hermes/skills/"
 
 # 14. Policy files

@@ -9,9 +9,9 @@
   <a href="https://github.com/TheAiSingularity/hermesclaw/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.2.0-orange.svg" alt="Version"></a>
 </p>
 
-**Hermes Agent sandboxed by NVIDIA OpenShell.**
+**Hermes Agent (NousResearch) running inside NVIDIA OpenShell.**
 
-NVIDIA built OpenShell to hardware-enforce AI agent behavior — blocking network egress, filesystem writes, and dangerous syscalls at the kernel level. They demonstrated it with Claude Code, Codex, and Cursor. They used it to build NemoClaw (OpenClaw + OpenShell). **Nobody had done it for Hermes Agent — until now.**
+NVIDIA built OpenShell to hardware-enforce AI agent behavior — blocking network egress, filesystem writes, and dangerous syscalls at the kernel level. NemoClaw (OpenClaw + OpenShell) is NVIDIA's reference implementation. HermesClaw is a community implementation applying the same runtime to Hermes Agent.
 
 HermesClaw puts Hermes inside OpenShell. The agent gets its full capability stack (40+ tools, persistent memory, self-improving skills, Telegram/Signal/Discord/Slack/WhatsApp/Email gateway) while the sandbox enforces hard limits: Hermes can only reach `inference.local` (your llama.cpp or any OpenAI-compatible API), can only write to `~/.hermes/` and `/sandbox/`, and cannot call `ptrace`, `mount`, or `kexec`. If a skill goes rogue, the OS stops it.
 
@@ -183,6 +183,60 @@ hermesclaw uninstall            Remove Docker image (data preserved)
 
 ---
 
+## Use Cases
+
+### Use case 1 — Personal research assistant with persistent memory
+
+You are a researcher who regularly synthesises papers, market reports, and technical docs. You want an AI assistant that remembers your prior work and improves itself over time.
+
+**With HermesClaw:**
+
+```bash
+# Start the assistant (strict policy — inference only, nothing leaves your machine)
+hermesclaw start --policy strict
+
+# Ask Hermes to research a topic
+hermesclaw chat "summarise the last 6 months of transformer architecture improvements and save key findings to memory"
+```
+
+What happens inside the sandbox:
+1. Hermes uses `web_search` and `web_extract` to gather papers
+2. It writes a summary to `~/.hermes/memories/` — persists across sandbox restarts
+3. After 5+ tool calls it auto-creates a skill (`research_synthesis`) with DSPy + GEPA optimisation
+4. Next session: Hermes loads its memory and the new skill, and builds on prior research
+
+**This is not possible with NemoClaw / OpenClaw:** OpenClaw has no persistent memory, no skill creation, and NemoClaw only supports Nemotron models.
+
+---
+
+### Use case 2 — Local AI gateway on your own hardware
+
+You want an AI assistant accessible from your phone (Telegram) and laptop (Discord), running on your home server, with all inference staying on-device. No data leaves your network.
+
+```bash
+# Configure messaging (one-time)
+docker compose run --rm hermesclaw hermes gateway setup   # add bot tokens interactively
+
+# Start with gateway policy (inference + Telegram + Discord allowed, everything else blocked)
+hermesclaw start --policy gateway
+```
+
+What happens:
+- Hermes runs inside OpenShell — the kernel blocks all outbound traffic except `inference.local` (LLM) and `api.telegram.org` / `discord.com`
+- Your Telegram bot and Discord bot share one Hermes session with shared memory
+- Voice notes you send are auto-transcribed before reaching the model
+- The OpenShell sandbox guarantees: even if a skill or plugin goes rogue, it cannot exfiltrate data or access outside-policy hosts
+
+```bash
+# Hot-swap to permissive for a web-search session, then back to gateway
+hermesclaw policy-set permissive   # unlocks DuckDuckGo + GitHub skills
+hermesclaw policy-set gateway      # locks back down — no restart required
+```
+
+**This is not possible with NemoClaw / OpenClaw:** NemoClaw has no messaging gateway. It runs Linux only and requires NVIDIA hardware. HermesClaw's Docker mode works on any machine including macOS.
+
+---
+
 ## HermesClaw vs NemoClaw
 
 Full comparison table and test results: [docs/test-results.md](docs/test-results.md)
@@ -191,7 +245,7 @@ Full comparison table and test results: [docs/test-results.md](docs/test-results
 
 | | HermesClaw | NemoClaw |
 |---|---|---|
-| **Agent** | Hermes (NousResearch, 18k ⭐) | OpenClaw (NVIDIA) |
+| **Agent** | Hermes (NousResearch) | OpenClaw (NVIDIA) |
 | **Sandbox** | OpenShell | OpenShell |
 | **Tools** | 40+ (web, browser, vision, voice, RL, …) | ~10 |
 | **Memory** | Persistent MEMORY.md + USER.md | None |
@@ -201,10 +255,10 @@ Full comparison table and test results: [docs/test-results.md](docs/test-results
 | **Python SDK** | Yes (`from run_agent import AIAgent`) | No |
 | **MCP servers** | Yes | No |
 | **IDE integration** | VS Code, JetBrains, Zed (ACP) | No |
-| **Inference providers** | Local, NVIDIA, OpenAI, Anthropic, Ollama, vLLM | Same |
+| **Inference providers** | Local llama.cpp, NVIDIA, OpenAI, Anthropic, Ollama, vLLM | Nemotron via NVIDIA API only |
 | **macOS support** | Yes (Docker mode) | No (Linux required) |
-| **Without NVIDIA GPU** | Yes (CPU Docker mode) | No |
-| **First implementation** | **This repo** | NVIDIA official |
+| **Without NVIDIA GPU** | Yes (CPU Docker mode) | No (NVIDIA hardware required) |
+| **Status** | Community implementation | NVIDIA official (alpha) |
 
 ---
 

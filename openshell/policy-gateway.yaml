@@ -32,45 +32,44 @@ filesystem_policy:
     - /tmp
 
 landlock:
-  compatibility: best_effort
+  enabled: true
 
 process:
-  run_as_user: hermes
-  run_as_group: hermes
+  user: hermes
+  group: hermes
 
 network_policies:
   inference_local:
+    binaries:
+      - "/root/.local/bin/hermes*"
+      - "/usr/bin/python3*"
     endpoints:
       - host: "inference.local"
         port: 443
-        enforcement: enforce
-        access: full
+        protocol: https
+        tls: required
       - host: "inference.local"
         port: 80
-        enforcement: enforce
-        access: full
-    binaries:
-      - path: "/root/.local/bin/hermes*"
-      - path: "/usr/bin/python3*"
+        protocol: http
 
   telegram_gateway:
+    binaries:
+      - "/root/.local/bin/hermes*"
     endpoints:
       - host: "api.telegram.org"
         port: 443
-        enforcement: enforce
-        access: full
-    binaries:
-      - path: "/root/.local/bin/hermes*"
+        protocol: https
+        tls: required
 
   discord_gateway:
+    binaries:
+      - "/root/.local/bin/hermes*"
     endpoints:
       - host: "discord.com"
         port: 443
-        enforcement: enforce
-        access: full
+        protocol: https
+        tls: required
       - host: "gateway.discord.gg"
         port: 443
-        enforcement: enforce
-        access: full
-    binaries:
-      - path: "/root/.local/bin/hermes*"
+        protocol: https
+        tls: required

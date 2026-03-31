@@ -1,6 +1,6 @@
 # Contributing to HermesClaw
 
-Thank you for your interest in contributing. HermesClaw is the first open implementation of Hermes Agent (NousResearch) running inside NVIDIA OpenShell, and we want it to be the definitive reference for anyone who wants to run a sandboxed Hermes agent.
+Thank you for your interest in contributing. HermesClaw is a community-maintained implementation of Hermes Agent (NousResearch) running inside NVIDIA OpenShell, and we want it to be a reliable reference for anyone who wants to run a sandboxed Hermes agent.
 
 ---
 

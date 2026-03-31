@@ -35,7 +35,7 @@ RESET='\033[0m'
 
 SANDBOX_NAME="${HERMESCLAW_SANDBOX:-hermesclaw-1}"
 POLICY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../openshell" && pwd)"
-VERSION="0.1.0"
+VERSION="0.2.0"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 _has() { command -v "$1" &>/dev/null; }
@@ -158,11 +158,11 @@ cmd_onboard() {
     fi
 
     # Step 6: Hermes memories
-    MEMORY_COUNT=$(find ~/.hermes/memories 2>/dev/null -type f | wc -l | tr -d ' ')
+    MEMORY_COUNT=$(find ~/.hermes/memories -type f 2>/dev/null | wc -l | tr -d ' ')
     echo -e "  Memories       ${GREEN}${MEMORY_COUNT} files in ~/.hermes/memories/${RESET}"
 
     # Step 7: Skills
-    SKILL_COUNT=$(find ~/.hermes/skills 2>/dev/null -type d -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')
+    SKILL_COUNT=$(find ~/.hermes/skills -type d -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
     echo -e "  Skills         ${GREEN}${SKILL_COUNT} installed in ~/.hermes/skills/${RESET}"
 
     echo ""
@@ -273,8 +273,8 @@ cmd_status() {
 
     # Memories & Skills
     echo ""
-    MEMORY_COUNT=$(find ~/.hermes/memories 2>/dev/null -type f | wc -l | tr -d ' ')
-    SKILL_COUNT=$(find ~/.hermes/skills 2>/dev/null -type d -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')
+    MEMORY_COUNT=$(find ~/.hermes/memories -type f 2>/dev/null | wc -l | tr -d ' ')
+    SKILL_COUNT=$(find ~/.hermes/skills -type d -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
     echo -e "  Memories:  ${GREEN}$MEMORY_COUNT files${RESET} in ~/.hermes/memories/"
     echo -e "  Skills:    ${GREEN}$SKILL_COUNT installed${RESET} in ~/.hermes/skills/"
     echo ""
@@ -432,7 +432,9 @@ cmd_chat() {
     fi
 
     if _has openshell && _sandbox_running; then
-        # Run inside the sandbox — pass prompt via env to avoid shell quoting issues
+        # Run inside the sandbox — pass prompt via env to avoid shell quoting issues.
+        # The single-quoted string is intentional: $HERMESCLAW_PROMPT expands inside the sandbox shell.
+        # shellcheck disable=SC2016
         HERMESCLAW_PROMPT="$prompt" openshell sandbox connect "$SANDBOX_NAME" -- \
             bash -c 'hermes chat -q "$HERMESCLAW_PROMPT"'
     elif _has docker && docker ps --format '{{.Names}}' 2>/dev/null | grep -q hermesclaw; then

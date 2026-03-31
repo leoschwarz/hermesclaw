@@ -22,7 +22,7 @@
 
 # ── Identity ──────────────────────────────────────────────────────────────────
 name: hermesclaw
-description: "Hermes Agent (NousResearch) in NVIDIA OpenShell — world's first HermesClaw sandbox"
+description: "Hermes Agent (NousResearch) sandboxed inside NVIDIA OpenShell"
 
 # ── Container ─────────────────────────────────────────────────────────────────
 container:

@@ -30,32 +30,35 @@ filesystem_policy:
     - /tmp
 
 landlock:
-  compatibility: best_effort
+  enabled: true
 
 process:
-  run_as_user: hermes
-  run_as_group: hermes
+  user: hermes
+  group: hermes
 
 network_policies:
   inference_only:
+    binaries:
+      - "/root/.local/bin/hermes*"
+      - "/usr/bin/python3*"
     endpoints:
       - host: "inference.local"
         port: 443
-        enforcement: enforce
-        access: full
-        rules:
+        protocol: https
+        tls: required
+        rest:
           - method: "POST"
             path: "/v1/chat/completions"
+            access_level: read-write
           - method: "POST"
             path: "/v1/completions"
+            access_level: read-write
           - method: "POST"
             path: "/v1/embeddings"
+            access_level: read-write
           - method: "GET"
             path: "/v1/models"
+            access_level: read-only
       - host: "inference.local"
         port: 80
-        enforcement: enforce
-        access: full
-    binaries:
-      - path: "/root/.local/bin/hermes*"
-      - path: "/usr/bin/python3*"
+        protocol: http

@@ -1,6 +1,6 @@
 # HermesClaw × NemoClaw — Feature Comparison & Test Results
 
-*Generated: 2026-03-31 11:12*
+*Generated: 2026-03-31 11:49*
 *Run `./scripts/test.sh` to refresh.*
 
 ## Legend
@@ -44,14 +44,14 @@
 
 | Feature | HermesClaw | NemoClaw | Notes |
 |---------|:----------:|:--------:|-------|
-| Local llama.cpp backend | ✅ | ✅ | Via inference.local → host:8080 |
-| NVIDIA API Catalog backend | ✅ | ✅ | openshell provider create --type nvidia |
-| OpenAI-compatible backend | ✅ | ✅ | openshell provider create --type openai |
-| Anthropic backend | ✅ | ✅ | openshell provider create --type anthropic |
-| Ollama backend | ✅ | ✅ | host.openshell.internal:11434 |
-| vLLM backend | ✅ | ✅ |  |
+| Local llama.cpp / any OpenAI-compatible backend | ✅ | ❌ | NemoClaw: Nemotron via NVIDIA API only (alpha) |
+| NVIDIA API Catalog (Nemotron models) | ✅ | ✅ | openshell provider create --type nvidia |
+| OpenAI API backend | ✅ | ❌ | NemoClaw does not expose OpenAI routing |
+| Anthropic backend | ✅ | ❌ | NemoClaw does not expose Anthropic routing |
+| Ollama backend | ✅ | ❌ | NemoClaw does not expose Ollama routing |
+| vLLM backend | ✅ | ❌ | NemoClaw does not expose vLLM routing |
 | Hot-swap provider without restart | ✅ | ✅ | openshell inference update |
-| Privacy router (sensitivity-based routing) | ✅ | ✅ | NemoClaw: built-in; HermesClaw: via HERMES_PRIVACY_THRESHOLD env |
+| Privacy router (sensitivity-based routing) | ✅ | ✅ | NemoClaw: built-in Nemotron router; HermesClaw: HERMES_PRIVACY_THRESHOLD env |
 | GPU passthrough to sandbox | ✅ | ✅ | openshell sandbox create --gpu |
 
 ### Sandbox Lifecycle
@@ -151,5 +151,13 @@
 
 ### Where NemoClaw has an edge
 - **Purpose-built CLI** — `nemoclaw onboard`, `nemoclaw deploy` for DGX Spark
-- **Nemotron model integration** — native NVIDIA model catalog access
+- **Nemotron model integration** — native NVIDIA model catalog access (NemoClaw is Nemotron-only; HermesClaw supports any OpenAI-compatible backend)
 - **Privacy sensitivity router** — automatic local/cloud routing by query sensitivity (HermesClaw has manual threshold config)
+
+### NemoClaw current limitations (as of v0.1.0, March 2026)
+- **Alpha status** — APIs, schemas, and CLI commands subject to breaking changes
+- **Linux only** — macOS and Windows WSL2 are unsupported or experimental
+- **Nemotron-only inference** — does not support OpenAI, Anthropic, Ollama, vLLM, or arbitrary llama.cpp
+- **No persistent memory** — agent state does not survive sandbox restarts
+- **No messaging gateway** — no Telegram, Discord, Slack, Signal, WhatsApp, or Email integration
+- **~10 built-in tools** — significantly fewer than Hermes Agent's 40+

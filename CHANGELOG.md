@@ -13,6 +13,28 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.3.0] — Unreleased
+
+### Fixed
+- **OpenShell policy YAML schema** — corrected all 5 policy files to match the authoritative OpenShell v1 schema:
+  - `process.run_as_user/run_as_group` → `process.user/group`
+  - `landlock.compatibility: best_effort` → `landlock.enabled: true`
+  - Endpoint format: replaced `enforcement`/`access` fields with `protocol`/`tls`
+  - REST rules: renamed `rules:` to `rest:`, added `access_level:` field per endpoint
+  - `binaries:` list items changed from `{path: "..."}` objects to bare glob strings
+- **`scripts/setup.sh`** — removed `openshell policy apply` (not a valid OpenShell CLI command); policies are passed by file path at sandbox creation time via `--policy` flag
+- **`scripts/status.sh`** — added missing `set -euo pipefail`
+- **`scripts/hermesclaw`** — version bumped to `0.2.0` (was `0.1.0` despite being the v0.2.0 release)
+
+### Changed
+- **NemoClaw comparison** — corrected inference provider comparison: NemoClaw supports Nemotron via NVIDIA API only; does not support local llama.cpp, OpenAI, Anthropic, Ollama, or vLLM backends
+- **Branding** — removed "world's first" / "nobody had done it" language from README, CONTRIBUTING.md, CHANGELOG, and profile YAML; replaced with neutral description of this being a community implementation built on NVIDIA OpenShell and NousResearch Hermes Agent
+
+### Added
+- **Use cases** — two documented use cases in README demonstrating where Hermes capabilities add practical value beyond NemoClaw: persistent research assistant and local AI messaging gateway
+
+---
+
 ## [0.2.0] — 2026-03-31
 
 ### Added
@@ -51,7 +73,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.1.0] — 2026-03-31
 
 ### Added
-- Initial release: world's first Hermes Agent (NousResearch) running inside NVIDIA OpenShell
+- Initial release: Hermes Agent (NousResearch) running inside NVIDIA OpenShell
 - `Dockerfile` — debian:bookworm-slim + official Hermes install script
 - `docker-compose.yml` — llama-server (CPU) + hermesclaw services
 - `openshell/hermesclaw-policy.yaml` — initial sandbox policy

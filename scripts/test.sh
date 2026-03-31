@@ -15,9 +15,6 @@ QUICK=false
 
 BOLD='\033[1m'
 GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-DIM='\033[2m'
 RESET='\033[0m'
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -38,11 +35,11 @@ record() {
     local hc_status="$3"
     local nc_status="$4"
     local note="${5:-}"
-    CATEGORIES[$idx]="$category"
-    NAMES[$idx]="$name"
-    HERMESCLAW_STATUS[$idx]="$hc_status"
-    NEMOCLAW_STATUS[$idx]="$nc_status"
-    NOTES[$idx]="$note"
+    CATEGORIES[idx]="$category"
+    NAMES[idx]="$name"
+    HERMESCLAW_STATUS[idx]="$hc_status"
+    NEMOCLAW_STATUS[idx]="$nc_status"
+    NOTES[idx]="$note"
     (( idx++ )) || true
 }
 
@@ -92,22 +89,22 @@ record "Policy Management" "Audit mode (log without block)" \
     "✅" "✅" "enforcement: audit"
 
 # ── INFERENCE ROUTING ────────────────────────────────────────────────────────
-record "Inference Routing" "Local llama.cpp backend" \
-    "✅" "✅" "Via inference.local → host:8080"
-record "Inference Routing" "NVIDIA API Catalog backend" \
+record "Inference Routing" "Local llama.cpp / any OpenAI-compatible backend" \
+    "✅" "❌" "NemoClaw: Nemotron via NVIDIA API only (alpha)"
+record "Inference Routing" "NVIDIA API Catalog (Nemotron models)" \
     "✅" "✅" "openshell provider create --type nvidia"
-record "Inference Routing" "OpenAI-compatible backend" \
-    "✅" "✅" "openshell provider create --type openai"
+record "Inference Routing" "OpenAI API backend" \
+    "✅" "❌" "NemoClaw does not expose OpenAI routing"
 record "Inference Routing" "Anthropic backend" \
-    "✅" "✅" "openshell provider create --type anthropic"
+    "✅" "❌" "NemoClaw does not expose Anthropic routing"
 record "Inference Routing" "Ollama backend" \
-    "✅" "✅" "host.openshell.internal:11434"
+    "✅" "❌" "NemoClaw does not expose Ollama routing"
 record "Inference Routing" "vLLM backend" \
-    "✅" "✅" ""
+    "✅" "❌" "NemoClaw does not expose vLLM routing"
 record "Inference Routing" "Hot-swap provider without restart" \
     "✅" "✅" "openshell inference update"
 record "Inference Routing" "Privacy router (sensitivity-based routing)" \
-    "✅" "✅" "NemoClaw: built-in; HermesClaw: via HERMES_PRIVACY_THRESHOLD env"
+    "✅" "✅" "NemoClaw: built-in Nemotron router; HermesClaw: HERMES_PRIVACY_THRESHOLD env"
 record "Inference Routing" "GPU passthrough to sandbox" \
     "✅" "✅" "openshell sandbox create --gpu"
 
@@ -301,13 +298,13 @@ CURRENT_CAT=""
 for i in "${!NAMES[@]}"; do
     cat="${CATEGORIES[$i]}"
     if [ "$cat" != "$CURRENT_CAT" ]; then
-        if [ -n "$CURRENT_CAT" ]; then
-            echo "" >> "$RESULTS_FILE"
-        fi
-        echo "### $cat" >> "$RESULTS_FILE"
-        echo "" >> "$RESULTS_FILE"
-        echo "| Feature | HermesClaw | NemoClaw | Notes |" >> "$RESULTS_FILE"
-        echo "|---------|:----------:|:--------:|-------|" >> "$RESULTS_FILE"
+        [ -n "$CURRENT_CAT" ] && echo "" >> "$RESULTS_FILE"
+        {
+            echo "### $cat"
+            echo ""
+            echo "| Feature | HermesClaw | NemoClaw | Notes |"
+            echo "|---------|:----------:|:--------:|-------|"
+        } >> "$RESULTS_FILE"
         CURRENT_CAT="$cat"
     fi
     echo "| ${NAMES[$i]} | ${HERMESCLAW_STATUS[$i]} | ${NEMOCLAW_STATUS[$i]} | ${NOTES[$i]} |" >> "$RESULTS_FILE"
@@ -347,8 +344,16 @@ cat >> "$RESULTS_FILE" << MDEOF
 
 ### Where NemoClaw has an edge
 - **Purpose-built CLI** — \`nemoclaw onboard\`, \`nemoclaw deploy\` for DGX Spark
-- **Nemotron model integration** — native NVIDIA model catalog access
+- **Nemotron model integration** — native NVIDIA model catalog access (NemoClaw is Nemotron-only; HermesClaw supports any OpenAI-compatible backend)
 - **Privacy sensitivity router** — automatic local/cloud routing by query sensitivity (HermesClaw has manual threshold config)
+
+### NemoClaw current limitations (as of v0.1.0, March 2026)
+- **Alpha status** — APIs, schemas, and CLI commands subject to breaking changes
+- **Linux only** — macOS and Windows WSL2 are unsupported or experimental
+- **Nemotron-only inference** — does not support OpenAI, Anthropic, Ollama, vLLM, or arbitrary llama.cpp
+- **No persistent memory** — agent state does not survive sandbox restarts
+- **No messaging gateway** — no Telegram, Discord, Slack, Signal, WhatsApp, or Email integration
+- **~10 built-in tools** — significantly fewer than Hermes Agent's 40+
 MDEOF
 
 echo -e "${GREEN}Results saved to: docs/test-results.md${RESET}"
