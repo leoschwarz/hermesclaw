@@ -1,5 +1,8 @@
 FROM debian:bookworm-slim
 
+# Create sandbox user (uid/gid 1000) — required by OpenShell
+RUN groupadd -g 1000 sandbox && useradd -u 1000 -g sandbox -m -s /bin/bash sandbox
+
 # Install system dependencies needed by the Hermes install script
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
