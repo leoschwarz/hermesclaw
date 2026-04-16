@@ -1,13 +1,7 @@
-# HermesClaw — STRICT policy preset
+# HermesClaw -- STRICT policy preset
 #
-# Maximum security. Hermes can only:
-#   - Call the local LLM via inference.local
-#   - Read/write ~/.hermes and /sandbox
-#   - No internet, no gateway, no skills download
-#
-# Use when: running Hermes as a pure local assistant with no external connectivity.
-#
-# Apply: openshell policy set hermesclaw-1 --policy openshell/policy-strict.yaml --wait
+# Maximum security. Hermes can only call the LLM via inference.local.
+# No internet, no gateway, no skills download.
 
 version: 1
 
@@ -39,26 +33,13 @@ process:
 network_policies:
   inference_only:
     binaries:
-      - "/root/.local/bin/hermes*"
-      - "/usr/bin/python3*"
+      - path: /root/.local/bin/hermes*
+      - path: /usr/bin/python3*
     endpoints:
-      - host: "inference.local"
+      - host: inference.local
         port: 443
-        protocol: https
-        tls: required
-        rest:
-          - method: "POST"
-            path: "/v1/chat/completions"
-            access_level: read-write
-          - method: "POST"
-            path: "/v1/completions"
-            access_level: read-write
-          - method: "POST"
-            path: "/v1/embeddings"
-            access_level: read-write
-          - method: "GET"
-            path: "/v1/models"
-            access_level: read-only
-      - host: "inference.local"
+        protocol: rest
+        enforcement: enforce
+        access: read-write
+      - host: inference.local
         port: 80
-        protocol: http

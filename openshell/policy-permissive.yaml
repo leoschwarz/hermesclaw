@@ -1,21 +1,7 @@
-# HermesClaw — PERMISSIVE policy preset
+# HermesClaw -- PERMISSIVE policy preset
 #
 # Full capability: inference + all gateways + web search + skills download.
-# Hermes can:
-#   - Call the local LLM via inference.local
-#   - Post/receive Telegram, Discord, Slack messages
-#   - Run web_search and web_extract tools (DuckDuckGo)
-#   - Download skills from GitHub
-#   - Use MCP servers on localhost
-#
-# Still blocked:
-#   - Arbitrary outbound connections (only approved hosts)
-#   - Filesystem outside ~/.hermes and /sandbox
-#   - Privileged syscalls
-#
-# Use when: you want the full Hermes toolset with sandbox safety net.
-#
-# Apply: openshell policy set hermesclaw-1 --policy openshell/policy-permissive.yaml --wait
+# Still blocked: arbitrary outbound connections, filesystem escape, privileged syscalls.
 
 version: 1
 
@@ -47,94 +33,82 @@ process:
 network_policies:
   inference_local:
     binaries:
-      - "/root/.local/bin/hermes*"
-      - "/usr/bin/python3*"
+      - path: /root/.local/bin/hermes*
+      - path: /usr/bin/python3*
     endpoints:
-      - host: "inference.local"
+      - host: inference.local
         port: 443
-        protocol: https
-        tls: required
-      - host: "inference.local"
+        protocol: rest
+        enforcement: enforce
+        access: read-write
+      - host: inference.local
         port: 80
-        protocol: http
 
   telegram_gateway:
     binaries:
-      - "/root/.local/bin/hermes*"
+      - path: /root/.local/bin/hermes*
     endpoints:
-      - host: "api.telegram.org"
+      - host: api.telegram.org
         port: 443
-        protocol: https
-        tls: required
+        enforcement: enforce
+        access: read-write
 
   discord_gateway:
     binaries:
-      - "/root/.local/bin/hermes*"
+      - path: /root/.local/bin/hermes*
     endpoints:
-      - host: "discord.com"
+      - host: discord.com
         port: 443
-        protocol: https
-        tls: required
-      - host: "gateway.discord.gg"
+        enforcement: enforce
+        access: read-write
+      - host: gateway.discord.gg
         port: 443
-        protocol: https
-        tls: required
+        enforcement: enforce
+        access: read-write
 
   slack_gateway:
     binaries:
-      - "/root/.local/bin/hermes*"
+      - path: /root/.local/bin/hermes*
     endpoints:
-      - host: "slack.com"
+      - host: slack.com
         port: 443
-        protocol: https
-        tls: required
-      - host: "wss-primary.slack.com"
+        enforcement: enforce
+        access: read-write
+      - host: wss-primary.slack.com
         port: 443
-        protocol: https
-        tls: required
+        enforcement: enforce
+        access: read-write
 
   web_search:
     binaries:
-      - "/root/.local/bin/hermes*"
+      - path: /root/.local/bin/hermes*
     endpoints:
-      - host: "html.duckduckgo.com"
+      - host: html.duckduckgo.com
         port: 443
-        protocol: https
-        tls: required
-        rest:
-          - method: "GET"
-            path: "/*"
-            access_level: read-only
-      - host: "api.duckduckgo.com"
+        protocol: rest
+        enforcement: enforce
+        access: read-only
+      - host: api.duckduckgo.com
         port: 443
-        protocol: https
-        tls: required
-        rest:
-          - method: "GET"
-            path: "/*"
-            access_level: read-only
+        protocol: rest
+        enforcement: enforce
+        access: read-only
 
   github_skills:
     binaries:
-      - "/root/.local/bin/hermes*"
+      - path: /root/.local/bin/hermes*
     endpoints:
-      - host: "github.com"
+      - host: github.com
         port: 443
-        protocol: https
-        tls: required
-      - host: "raw.githubusercontent.com"
+        enforcement: enforce
+        access: read-only
+      - host: raw.githubusercontent.com
         port: 443
-        protocol: https
-        tls: required
-        rest:
-          - method: "GET"
-            path: "/*"
-            access_level: read-only
-      - host: "api.github.com"
+        protocol: rest
+        enforcement: enforce
+        access: read-only
+      - host: api.github.com
         port: 443
-        protocol: https
-        tls: required
-        rest:
-          - method: "GET"
-            path: "/*"
-            access_level: read-only
+        protocol: rest
+        enforcement: enforce
+        access: read-only
