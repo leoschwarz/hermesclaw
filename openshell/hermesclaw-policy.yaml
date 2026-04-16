@@ -37,8 +37,8 @@ landlock:
 # -- Process isolation (STATIC, locked at creation) --
 # Hermes runs as an unprivileged user -- cannot escalate to root.
 process:
-  run_as_user: hermes
-  run_as_group: hermes
+  run_as_user: sandbox
+  run_as_group: sandbox
 
 # -- Network policies (OPA + HTTP CONNECT -- HOT-RELOADABLE) --
 network_policies:
