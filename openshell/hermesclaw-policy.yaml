@@ -41,13 +41,13 @@ filesystem_policy:
 landlock:
   # enabled: true means Landlock is required; the sandbox will fail to start
   # on kernels that do not support Landlock (Linux 5.13+).
-  enabled: true
+  compatibility: best_effort
 
 # ── Process isolation (STATIC, locked at creation) ────────────────────────────
 # Hermes runs as an unprivileged user — cannot escalate to root.
 process:
-  user: hermes
-  group: hermes
+  run_as_user: hermes
+  run_as_group: hermes
 
 # ── Network policies (OPA + HTTP CONNECT — HOT-RELOADABLE) ───────────────────
 # Named policies. The active policy can be swapped on a running sandbox with:

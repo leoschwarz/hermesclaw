@@ -32,11 +32,11 @@ filesystem_policy:
     - /tmp
 
 landlock:
-  enabled: true
+  compatibility: best_effort
 
 process:
-  user: hermes
-  group: hermes
+  run_as_user: hermes
+  run_as_group: hermes
 
 network_policies:
   inference_local:
