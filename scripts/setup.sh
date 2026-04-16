@@ -55,19 +55,17 @@ echo "   This installs Hermes Agent inside the container — takes 2-5 minutes o
 docker build -t hermesclaw:latest .
 echo -e "${GREEN}✓ Image built: hermesclaw:latest${RESET}"
 
-# ── Step 4: Register OpenShell profile (if available) ────────────────────────
-# OpenShell policies are not pre-registered — they are referenced by file path
-# when creating a sandbox:
-#   openshell sandbox create --policy openshell/policy-strict.yaml -- hermes gateway
-#
-# The profile bundles image + policy + inference into a reusable template
-# and IS registered with openshell profile register.
+# ── Step 4: Verify OpenShell (if available) ─────────────────────────────────
 echo ""
-echo -e "${BOLD}[4/5] Registering OpenShell sandbox profile...${RESET}"
+echo -e "${BOLD}[4/5] Checking OpenShell gateway...${RESET}"
 if [ "$OPENSHELL_AVAILABLE" = true ]; then
-    openshell profile register openshell/hermesclaw-profile.yaml
-    echo -e "${GREEN}✓ Profile registered: hermesclaw${RESET}"
-    echo "   Policies are applied at sandbox creation time via --policy flag."
+    if openshell status &>/dev/null; then
+        echo -e "${GREEN}✓ OpenShell gateway is running${RESET}"
+    else
+        echo -e "${YELLOW}⚠  OpenShell gateway is not running.${RESET}"
+        echo "   Start it before creating a sandbox:"
+        echo -e "     ${CYAN}openshell gateway start${RESET}"
+    fi
 else
     echo "   Skipped (OpenShell not available)."
 fi

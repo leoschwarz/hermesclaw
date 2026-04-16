@@ -79,6 +79,7 @@ if command -v openshell &>/dev/null; then
     echo ""
 
     openshell sandbox create \
+        --from "$SCRIPT_DIR/.." \
         --policy "$POLICY_FILE" \
         --name "$SANDBOX_NAME" \
         $GPU_FLAG \
