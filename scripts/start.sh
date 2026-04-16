@@ -28,18 +28,25 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# ── Pre-check: llama.cpp ─────────────────────────────────────────────────────
-if ! curl -sf http://127.0.0.1:8080/health >/dev/null 2>&1; then
-    echo -e "${YELLOW}⚠  llama.cpp is not running on port 8080.${RESET}"
-    echo ""
-    echo "Start it first:"
-    echo -e "  ${CYAN}llama-server -m models/<model>.gguf --port 8080 -ngl 99${RESET}"
-    echo ""
-    echo "Or use docker compose (starts llama-server automatically):"
-    echo -e "  ${CYAN}docker compose up${RESET}"
-    exit 1
+# ── Pre-check: inference backend ─────────────────────────────────────────────
+# Skip if using external API (OpenShell's inference.local handles routing).
+# Only check for local llama.cpp when no external provider is configured.
+SKIP_INFERENCE_CHECK="${HERMESCLAW_SKIP_INFERENCE_CHECK:-}"
+if [ -z "$SKIP_INFERENCE_CHECK" ]; then
+    if ! curl -sf http://127.0.0.1:8080/health >/dev/null 2>&1; then
+        echo -e "${YELLOW}⚠  No local llama.cpp on port 8080.${RESET}"
+        echo ""
+        echo "If using a cloud API (Nous, OpenAI, etc.), skip this check:"
+        echo -e "  ${CYAN}HERMESCLAW_SKIP_INFERENCE_CHECK=1 ./scripts/start.sh --policy gateway${RESET}"
+        echo ""
+        echo "Or start a local model first:"
+        echo -e "  ${CYAN}llama-server -m models/<model>.gguf --port 8080 -ngl 99${RESET}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓ llama.cpp is running${RESET}"
+else
+    echo -e "${CYAN}ℹ  Skipping local inference check (external API mode)${RESET}"
 fi
-echo -e "${GREEN}✓ llama.cpp is running${RESET}"
 
 # ── Choose mode ──────────────────────────────────────────────────────────────
 if command -v openshell &>/dev/null; then
