@@ -19,7 +19,7 @@ filesystem_policy:
     - /sandbox/knowledge
     - /sandbox/configs
   read_write:
-    - /root/.hermes
+    - /home/sandbox/.hermes
     - /sandbox
     - /tmp
 
@@ -33,7 +33,7 @@ process:
 network_policies:
   inference_local:
     binaries:
-      - path: /root/.local/bin/hermes*
+      - path: /usr/local/bin/hermes*
       - path: /usr/bin/python3*
     endpoints:
       - host: inference.local
@@ -46,7 +46,7 @@ network_policies:
 
   telegram_gateway:
     binaries:
-      - path: /root/.local/bin/hermes*
+      - path: /usr/local/bin/hermes*
     endpoints:
       - host: api.telegram.org
         port: 443
@@ -55,7 +55,7 @@ network_policies:
 
   discord_gateway:
     binaries:
-      - path: /root/.local/bin/hermes*
+      - path: /usr/local/bin/hermes*
     endpoints:
       - host: discord.com
         port: 443
@@ -68,7 +68,7 @@ network_policies:
 
   slack_gateway:
     binaries:
-      - path: /root/.local/bin/hermes*
+      - path: /usr/local/bin/hermes*
     endpoints:
       - host: slack.com
         port: 443
@@ -81,7 +81,7 @@ network_policies:
 
   web_search:
     binaries:
-      - path: /root/.local/bin/hermes*
+      - path: /usr/local/bin/hermes*
     endpoints:
       - host: html.duckduckgo.com
         port: 443
@@ -96,7 +96,7 @@ network_policies:
 
   github_skills:
     binaries:
-      - path: /root/.local/bin/hermes*
+      - path: /usr/local/bin/hermes*
     endpoints:
       - host: github.com
         port: 443

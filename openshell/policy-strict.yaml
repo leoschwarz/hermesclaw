@@ -19,7 +19,7 @@ filesystem_policy:
     - /sandbox/knowledge
     - /sandbox/configs
   read_write:
-    - /root/.hermes
+    - /home/sandbox/.hermes
     - /sandbox
     - /tmp
 
@@ -33,7 +33,7 @@ process:
 network_policies:
   inference_only:
     binaries:
-      - path: /root/.local/bin/hermes*
+      - path: /usr/local/bin/hermes*
       - path: /usr/bin/python3*
     endpoints:
       - host: inference.local

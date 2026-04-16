@@ -1,9 +1,6 @@
 FROM debian:bookworm-slim
 
-# Create sandbox user (uid/gid 1000) — required by OpenShell
-RUN groupadd -g 1000 sandbox && useradd -u 1000 -g sandbox -m -s /bin/bash sandbox
-
-# Install system dependencies needed by the Hermes install script
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
@@ -12,37 +9,41 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     xz-utils \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Hermes Agent. The install script runs an interactive setup wizard at the
-# end that tries to open /dev/tty (not available in Docker build). The binary and
-# skills are fully installed before the wizard runs, so we ignore the wizard failure.
+# Create sandbox user (uid/gid 1000) — required by OpenShell
+RUN groupadd -g 1000 sandbox && \
+    useradd -u 1000 -g sandbox -m -s /bin/bash sandbox
+
+# Install Hermes Agent as root, then make accessible to sandbox user.
+# The install script puts the binary in /root/.local/bin/ and config in /root/.hermes/.
+# We move these to the sandbox user's home so OpenShell's run_as_user can access them.
 RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh \
     | bash || true \
-    && test -f /root/.local/bin/hermes || test -f /root/.hermes/bin/hermes \
-    || (echo "Hermes binary not found after install" && exit 1)
+    && HERMES_BIN=$(command -v hermes || echo "/root/.local/bin/hermes") \
+    && test -f "$HERMES_BIN" || (echo "Hermes binary not found after install" && exit 1) \
+    && cp "$HERMES_BIN" /usr/local/bin/hermes \
+    && chmod 755 /usr/local/bin/hermes
 
-ENV PATH="/root/.local/bin:$PATH"
+# Copy hermes config from root's install to sandbox user's home
+RUN if [ -d /root/.hermes ]; then \
+      cp -a /root/.hermes /home/sandbox/.hermes; \
+      chown -R sandbox:sandbox /home/sandbox/.hermes; \
+    fi
 
-# Configure Hermes to use local llama.cpp server (via host.docker.internal on macOS).
-# provider: "custom" (NOT alias "llamacpp") is required — runtime_provider.py only
-# activates config base_url for the literal string "custom", not aliases.
-RUN sed -i \
-    -e 's|^  default: .*|  default: "local"|' \
-    -e 's|^  provider: .*|  provider: "custom"|' \
-    -e 's|^  base_url: .*|  base_url: "http://host.docker.internal:8080/v1"|' \
-    /root/.hermes/config.yaml \
-    && sed -i '/^  base_url: "http:\/\/host.docker.internal/a\\  api_key: "local"' /root/.hermes/config.yaml \
-    && echo "Hermes configured for local llamacpp at host.docker.internal:8080"
+# Set up sandbox user environment
+USER sandbox
+WORKDIR /home/sandbox
 
-# Working directory — maps to the sandboxed filesystem
-WORKDIR /sandbox
+ENV PATH="/usr/local/bin:$PATH"
+ENV HOME="/home/sandbox"
+ENV HERMES_HOME="/home/sandbox/.hermes"
 
-# Persistent volumes:
-#   /root/.hermes  — Hermes memories, skills, config (persists across restarts)
-#   /sandbox       — Agent working directory
-VOLUME ["/root/.hermes", "/sandbox"]
+# Persistent volumes (mounted at runtime):
+#   /home/sandbox/.hermes  — Hermes memories, skills, config
+#   /sandbox               — Agent working directory
+VOLUME ["/home/sandbox/.hermes", "/sandbox"]
 
-# Default: start the Hermes gateway (handles Telegram, Signal, Discord, etc.)
-# Override with: docker compose run hermesclaw hermes chat -q "hello"
+# Default: start the Hermes gateway
 CMD ["hermes", "gateway"]

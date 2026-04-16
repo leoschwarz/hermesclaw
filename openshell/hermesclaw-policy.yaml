@@ -26,7 +26,7 @@ filesystem_policy:
     - /sandbox/configs
 
   read_write:
-    - /root/.hermes
+    - /home/sandbox/.hermes
     - /sandbox
     - /tmp
 
@@ -48,7 +48,7 @@ network_policies:
   # backend. Credentials are managed by OpenShell, not exposed to the agent.
   inference_local:
     binaries:
-      - path: /root/.local/bin/hermes*
+      - path: /usr/local/bin/hermes*
       - path: /usr/bin/python3*
     endpoints:
       - host: inference.local
@@ -62,7 +62,7 @@ network_policies:
   # Telegram gateway (uncomment to enable)
   # telegram:
   #   binaries:
-  #     - path: /root/.local/bin/hermes*
+  #     - path: /usr/local/bin/hermes*
   #   endpoints:
   #     - host: api.telegram.org
   #       port: 443
@@ -72,7 +72,7 @@ network_policies:
   # Discord gateway (uncomment to enable)
   # discord:
   #   binaries:
-  #     - path: /root/.local/bin/hermes*
+  #     - path: /usr/local/bin/hermes*
   #   endpoints:
   #     - host: discord.com
   #       port: 443
@@ -86,7 +86,7 @@ network_policies:
   # GitHub skills download (uncomment to enable)
   # github_skills:
   #   binaries:
-  #     - path: /root/.local/bin/hermes*
+  #     - path: /usr/local/bin/hermes*
   #   endpoints:
   #     - host: github.com
   #       port: 443
@@ -106,7 +106,7 @@ network_policies:
   # Web search (uncomment to enable)
   # web_search:
   #   binaries:
-  #     - path: /root/.local/bin/hermes*
+  #     - path: /usr/local/bin/hermes*
   #   endpoints:
   #     - host: html.duckduckgo.com
   #       port: 443

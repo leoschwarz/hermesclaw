@@ -85,6 +85,12 @@ if command -v openshell &>/dev/null; then
     [ -n "$GPU_FLAG" ] && echo -e "  GPU:     ${CYAN}enabled${RESET}"
     echo ""
 
+    # Delete existing sandbox if present
+    if openshell sandbox get "$SANDBOX_NAME" &>/dev/null; then
+        echo -e "${YELLOW}Sandbox '$SANDBOX_NAME' already exists — deleting...${RESET}"
+        openshell sandbox delete "$SANDBOX_NAME"
+    fi
+
     openshell sandbox create \
         --from "$SCRIPT_DIR/.." \
         --policy "$POLICY_FILE" \
