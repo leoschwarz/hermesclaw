@@ -47,28 +47,23 @@ resources:
 # gpu: true
 
 # ── Inference routing ─────────────────────────────────────────────────────────
-# OpenShell intercepts calls to https://inference.local inside the sandbox
-# and routes them to this endpoint (credentials are managed by OpenShell,
-# not exposed to the agent).
+# OpenShell intercepts calls to https://inference.local inside the sandbox and
+# routes them to whichever backend is registered with `openshell inference set`.
+# Credentials are managed by OpenShell and never exposed to the agent.
 #
-# The agent only ever sees: https://inference.local/v1/chat/completions
-# OpenShell routes that to whichever backend is configured here.
+# Inference providers are NOT configured from this profile — they live at the
+# gateway level. Register one before first chat:
 #
-# Switch providers live (hot-reload, no restart):
-#   openshell inference set --provider local-llama --model qwen3-4b
-#   openshell inference set --provider nvidia-prod --model nemotron-4-340b
+#   openshell provider create anthropic-prod --type anthropic --api-key "$ANTHROPIC_API_KEY"
 #   openshell inference set --provider anthropic-prod --model claude-sonnet-4-6
-inference:
-  # Local llama.cpp (default, no API key needed)
-  provider: local
-  endpoint: "http://127.0.0.1:8080/v1"
-
-  # Alternatives — configure via openshell provider create, then reference here:
-  # provider: nvidia                # NVIDIA API Catalog (Nemotron models)
-  # provider: openai                # OpenAI
-  # provider: anthropic             # Anthropic Claude
-  # provider: ollama                # Local Ollama (http://host.openshell.internal:11434/v1)
-  # provider: vllm                  # Local vLLM
+#
+# Or, for a local model:
+#   openshell provider create local-llama --type openai-compatible \
+#       --endpoint "http://host.openshell.internal:${LLAMA_PORT:-8080}/v1"
+#   openshell inference set --provider local-llama --model <model-name>
+#
+# Switch providers live (hot-reload, no sandbox restart):
+#   openshell inference set --provider nvidia-prod --model nemotron-4-340b
 
 # ── Filesystem mounts ─────────────────────────────────────────────────────────
 mounts:

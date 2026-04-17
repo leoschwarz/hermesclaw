@@ -65,6 +65,14 @@ _llama_healthy() {
     curl -sf http://127.0.0.1:8080/health >/dev/null 2>&1
 }
 
+_openshell_inference_ready() {
+    _has openshell && openshell inference get &>/dev/null
+}
+
+_inference_ready() {
+    _llama_healthy || _openshell_inference_ready
+}
+
 _policy_file() {
     local preset="${1:-strict}"
     case "$preset" in
@@ -134,12 +142,15 @@ cmd_onboard() {
         echo "                 Install: curl -fsSL https://www.nvidia.com/openshell.sh | bash"
     fi
 
-    # Step 3: llama.cpp
+    # Step 3: inference — local llama.cpp or OpenShell provider
     if _llama_healthy; then
         echo -e "  llama.cpp      ${GREEN}✓ running on :8080${RESET}"
+    elif _openshell_inference_ready; then
+        echo -e "  Inference      ${GREEN}✓ OpenShell provider configured${RESET}"
     else
-        echo -e "  llama.cpp      ${YELLOW}⚠ not running${RESET}"
-        echo "                 Start: llama-server -m models/<model>.gguf --port 8080 -ngl 99"
+        echo -e "  Inference      ${YELLOW}⚠ not configured${RESET}"
+        echo "                 Local:    llama-server -m models/<model>.gguf --port 8080 -ngl 99"
+        echo "                 External: openshell provider create <name> --type <type> ... && openshell inference set ..."
     fi
 
     # Step 4: Model files
@@ -166,7 +177,7 @@ cmd_onboard() {
     echo -e "  Skills         ${GREEN}${SKILL_COUNT} installed in ~/.hermes/skills/${RESET}"
 
     echo ""
-    if _has openshell && _llama_healthy; then
+    if _has openshell && _inference_ready; then
         echo -e "${GREEN}Ready to launch!${RESET} Run: ${CYAN}hermesclaw start${RESET}"
     elif _has docker; then
         echo -e "${YELLOW}Docker mode available.${RESET} Run: ${CYAN}docker compose up${RESET}"
@@ -191,25 +202,48 @@ cmd_start() {
     if _has openshell; then
         echo -e "${BOLD}Starting HermesClaw (OpenShell mode)...${RESET}"
 
-        if ! _llama_healthy; then
-            echo -e "${YELLOW}⚠ llama.cpp not running on :8080${RESET}"
-            echo "  Start it first or configure a different inference provider."
-            echo -e "  ${CYAN}openshell inference set --provider <name> --model <model>${RESET}"
+        if ! _inference_ready; then
+            echo -e "${YELLOW}⚠ No inference backend detected.${RESET}"
+            echo "  Start llama.cpp on :8080, or register an OpenShell provider:"
+            echo -e "  ${CYAN}openshell provider create anthropic-prod --type anthropic --api-key \$ANTHROPIC_API_KEY${RESET}"
+            echo -e "  ${CYAN}openshell inference set --provider anthropic-prod --model claude-sonnet-4-6${RESET}"
         fi
 
-        local policy_file
+        local policy_file repo_dir
         policy_file=$(_policy_file "$policy_preset")
+        repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
         echo -e "  Policy:  ${CYAN}$policy_preset${RESET} ($policy_file)"
         echo -e "  Sandbox: ${CYAN}$SANDBOX_NAME${RESET}"
         [ -n "$gpu_flag" ] && echo -e "  GPU:     ${CYAN}enabled${RESET}"
         echo ""
 
+        if openshell sandbox get "$SANDBOX_NAME" &>/dev/null; then
+            echo -e "${YELLOW}Sandbox '$SANDBOX_NAME' already exists — deleting...${RESET}"
+            openshell sandbox delete "$SANDBOX_NAME"
+        fi
+
+        set +e
         openshell sandbox create \
+            --from "$repo_dir" \
             --policy "$policy_file" \
             --name "$SANDBOX_NAME" \
             $gpu_flag \
             -- hermes gateway
+        local create_rc=$?
+        set -e
+
+        if [ $create_rc -ne 0 ]; then
+            echo ""
+            echo -e "${YELLOW}sandbox create exited with code $create_rc — dumping diagnostics:${RESET}"
+            echo ""
+            echo -e "${BOLD}openshell sandbox get $SANDBOX_NAME${RESET}"
+            openshell sandbox get "$SANDBOX_NAME" || true
+            echo ""
+            echo -e "${BOLD}openshell logs $SANDBOX_NAME --tail 200${RESET}"
+            openshell logs "$SANDBOX_NAME" --tail 200 || true
+            exit "$create_rc"
+        fi
 
         echo ""
         echo -e "${GREEN}✓ Sandbox started: $SANDBOX_NAME${RESET}"
@@ -247,11 +281,13 @@ cmd_status() {
     echo -e "${BOLD}HermesClaw Status${RESET}"
     echo "================================"
 
-    # llama.cpp / inference
+    # Inference
     if _llama_healthy; then
         echo -e "  llama.cpp      ${GREEN}running${RESET} (port 8080)"
+    elif _openshell_inference_ready; then
+        echo -e "  Inference      ${GREEN}OpenShell provider configured${RESET}"
     else
-        echo -e "  llama.cpp      ${RED}not running${RESET}"
+        echo -e "  Inference      ${RED}not configured${RESET}"
     fi
 
     # OpenShell / Docker
@@ -261,10 +297,8 @@ cmd_status() {
         openshell sandbox get "$SANDBOX_NAME" 2>/dev/null || \
             echo -e "  ${YELLOW}$SANDBOX_NAME not running${RESET}"
         echo ""
-        if _has openshell; then
-            echo -e "  ${BOLD}Inference config:${RESET}"
-            openshell inference get 2>/dev/null || echo "  (not configured)"
-        fi
+        echo -e "  ${BOLD}Inference config:${RESET}"
+        openshell inference get 2>/dev/null || echo "  (not configured)"
     else
         echo ""
         echo -e "  ${BOLD}Docker services:${RESET}"
@@ -357,11 +391,13 @@ cmd_doctor() {
         echo -e "  [${YELLOW}⚠${RESET}] OpenShell: not found (Docker-only mode)"
     fi
 
-    # 3. llama.cpp
+    # 3. Inference: llama.cpp or OpenShell provider
     if _llama_healthy; then
         echo -e "  [${GREEN}✓${RESET}] llama.cpp: running on :8080"
+    elif _openshell_inference_ready; then
+        echo -e "  [${GREEN}✓${RESET}] Inference: OpenShell provider configured"
     else
-        echo -e "  [${RED}✗${RESET}] llama.cpp: not responding on :8080"
+        echo -e "  [${RED}✗${RESET}] Inference: no backend (start llama.cpp or register an OpenShell provider)"
         all_ok=false
     fi
 

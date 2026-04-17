@@ -108,7 +108,7 @@ fi
 if curl -sf http://127.0.0.1:8080/health >/dev/null 2>&1; then
     record "PASS" "llama.cpp on :8080" "responding"
 else
-    record "WARN" "llama.cpp on :8080" "not responding — start before sandboxing"
+    record "WARN" "llama.cpp on :8080" "not running — required unless using OpenShell inference router"
 fi
 
 # 6. llama.cpp /v1/models

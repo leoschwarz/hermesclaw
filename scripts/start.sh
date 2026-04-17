@@ -5,6 +5,10 @@
 #   ./scripts/start.sh
 #   ./scripts/start.sh --gpu                    # Pass NVIDIA GPU to sandbox
 #   ./scripts/start.sh --policy permissive      # Use a policy preset
+#
+# Skip the local llama.cpp health check when using an external API that
+# OpenShell routes through its privacy router:
+#   HERMESCLAW_SKIP_INFERENCE_CHECK=1 ./scripts/start.sh
 
 set -euo pipefail
 
@@ -80,6 +84,15 @@ if command -v openshell &>/dev/null; then
         exit 1
     fi
 
+    # When skipping the local llama.cpp check, the agent will route via
+    # OpenShell's inference.local proxy — which needs a registered provider.
+    if [ -n "$SKIP_INFERENCE_CHECK" ] && ! openshell inference get &>/dev/null; then
+        echo -e "${YELLOW}⚠  No OpenShell inference provider configured.${RESET}"
+        echo "  Register one before chatting, e.g.:"
+        echo -e "    ${CYAN}openshell provider create anthropic-prod --type anthropic --api-key \$ANTHROPIC_API_KEY${RESET}"
+        echo -e "    ${CYAN}openshell inference set --provider anthropic-prod --model claude-sonnet-4-6${RESET}"
+    fi
+
     echo -e "  Policy:  ${CYAN}$POLICY_PRESET${RESET}"
     echo -e "  Sandbox: ${CYAN}$SANDBOX_NAME${RESET}"
     [ -n "$GPU_FLAG" ] && echo -e "  GPU:     ${CYAN}enabled${RESET}"
@@ -91,12 +104,29 @@ if command -v openshell &>/dev/null; then
         openshell sandbox delete "$SANDBOX_NAME"
     fi
 
+    # Run `sandbox create` without pipefail aborting the whole script — we want
+    # to dump diagnostics on failure.
+    set +e
     openshell sandbox create \
         --from "$SCRIPT_DIR/.." \
         --policy "$POLICY_FILE" \
         --name "$SANDBOX_NAME" \
         $GPU_FLAG \
         -- hermes gateway
+    CREATE_RC=$?
+    set -e
+
+    if [ $CREATE_RC -ne 0 ]; then
+        echo ""
+        echo -e "${YELLOW}sandbox create exited with code $CREATE_RC — dumping diagnostics:${RESET}"
+        echo ""
+        echo -e "${BOLD}openshell sandbox get $SANDBOX_NAME${RESET}"
+        openshell sandbox get "$SANDBOX_NAME" || true
+        echo ""
+        echo -e "${BOLD}openshell logs $SANDBOX_NAME --tail 200${RESET}"
+        openshell logs "$SANDBOX_NAME" --tail 200 || true
+        exit "$CREATE_RC"
+    fi
 
     echo -e "${GREEN}✓ Sandbox started: $SANDBOX_NAME${RESET}"
     echo ""

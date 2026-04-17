@@ -108,8 +108,13 @@ cd hermesclaw
 # Build image + register OpenShell policy and profile
 ./scripts/setup.sh
 
-# Start llama-server on the host
+# Start llama-server on the host …
 llama-server -m models/your-model.gguf --port 8080 --ctx-size 32768 -ngl 99
+
+# … or skip llama.cpp entirely and route through an OpenShell-managed provider:
+openshell provider create anthropic-prod --type anthropic --api-key "$ANTHROPIC_API_KEY"
+openshell inference set --provider anthropic-prod --model claude-sonnet-4-6
+export HERMESCLAW_SKIP_INFERENCE_CHECK=1
 
 # Start Hermes inside the sandbox
 ./scripts/start.sh
