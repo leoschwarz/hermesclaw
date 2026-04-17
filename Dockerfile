@@ -24,30 +24,37 @@ RUN groupadd -g 1000 sandbox && \
 RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh \
     | bash || true
 
-# Copy source + config to sandbox user's home, re-install as non-editable
+# Copy source + config to sandbox user's home
 RUN if [ -d /root/.hermes ]; then \
       cp -a /root/.hermes /home/sandbox/.hermes; \
       chown -R sandbox:sandbox /home/sandbox/.hermes; \
     fi
 
-USER sandbox
+# Fix hardcoded /root/.hermes paths in the editable-install finder.
+# The venv has __editable__*_finder.py files that reference /root/.hermes/... —
+# rewrite them to /home/sandbox/.hermes/...
+RUN find /home/sandbox/.hermes/hermes-agent/venv -name "__editable__*finder.py" \
+      -exec sed -i 's|/root/.hermes|/home/sandbox/.hermes|g' {} + 2>/dev/null || true \
+    && find /home/sandbox/.hermes/hermes-agent/venv -name "*.pth" \
+      -exec sed -i 's|/root/.hermes|/home/sandbox/.hermes|g' {} + 2>/dev/null || true \
+    && find /home/sandbox/.hermes/hermes-agent/venv -name "RECORD" \
+      -exec sed -i 's|/root/.hermes|/home/sandbox/.hermes|g' {} + 2>/dev/null || true
 
-# Remove the root-built venv and create a fresh one with a non-editable install.
-# The root venv has editable-install finders that hardcode /root/.hermes/ paths.
-RUN rm -rf /home/sandbox/.hermes/hermes-agent/venv \
-    && python3 -m venv /home/sandbox/.hermes/hermes-agent/venv \
-    && /home/sandbox/.hermes/hermes-agent/venv/bin/pip install --no-cache-dir \
-         /home/sandbox/.hermes/hermes-agent \
-    && printf '#!/bin/bash\nexec /home/sandbox/.hermes/hermes-agent/venv/bin/python3 -m hermes_cli.main "$@"\n' \
-         > /home/sandbox/.local/bin/hermes 2>/dev/null || true
+# Also fix the hermes binary shebang if it references /root
+RUN HERMES_BIN="/home/sandbox/.hermes/hermes-agent/venv/bin/hermes" \
+    && if [ -f "$HERMES_BIN" ]; then \
+         sed -i '1s|/root/.hermes|/home/sandbox/.hermes|g' "$HERMES_BIN"; \
+       fi
 
-# Also create wrapper at /usr/local/bin via a temp — USER sandbox can't write there,
-# so we do it in a root layer below.
-
+# Create wrapper at /usr/local/bin/hermes (needs root to write there)
 USER root
-RUN printf '#!/bin/bash\nexec /home/sandbox/.hermes/hermes-agent/venv/bin/hermes "$@"\n' \
-         > /usr/local/bin/hermes \
-    && chmod 755 /usr/local/bin/hermes
+RUN HERMES_BIN="/home/sandbox/.hermes/hermes-agent/venv/bin/hermes" \
+    && if [ -f "$HERMES_BIN" ]; then \
+         printf '#!/bin/bash\nexec "%s" "$@"\n' "$HERMES_BIN" > /usr/local/bin/hermes; \
+         chmod 755 /usr/local/bin/hermes; \
+       else \
+         echo "WARNING: $HERMES_BIN not found"; \
+       fi
 
 USER sandbox
 
