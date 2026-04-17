@@ -40,6 +40,10 @@ RUN find /home/sandbox/.hermes/hermes-agent/venv -name "__editable__*finder.py" 
     && find /home/sandbox/.hermes/hermes-agent/venv -name "RECORD" \
       -exec sed -i 's|/root/.hermes|/home/sandbox/.hermes|g' {} + 2>/dev/null || true
 
+# Delete compiled .pyc cache so Python recompiles from the patched .py files
+RUN find /home/sandbox/.hermes/hermes-agent/venv -name "__editable__*finder*.pyc" -delete 2>/dev/null || true \
+    && find /home/sandbox/.hermes/hermes-agent/venv -path "*__pycache__*" -name "*editable*finder*" -delete 2>/dev/null || true
+
 # Also fix the hermes binary shebang if it references /root
 RUN HERMES_BIN="/home/sandbox/.hermes/hermes-agent/venv/bin/hermes" \
     && if [ -f "$HERMES_BIN" ]; then \
