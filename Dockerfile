@@ -1,6 +1,8 @@
 FROM debian:bookworm-slim
 
-# Install system dependencies
+# Install system dependencies.
+# iproute2 is required by OpenShell's BYOC sandbox for network-namespace setup —
+# without it the supervisor can't wire netns and kills the container at start.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
@@ -10,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     xz-utils \
     sudo \
+    iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create sandbox user (uid/gid 1000) — required by OpenShell
