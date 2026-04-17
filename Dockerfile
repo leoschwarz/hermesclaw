@@ -17,7 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Create sandbox user (uid/gid 1000) — required by OpenShell
 RUN groupadd -g 1000 sandbox && \
-    useradd -u 1000 -g sandbox -m -s /bin/bash sandbox
+    useradd -u 1000 -g sandbox -m -s /bin/bash sandbox \
+    && chmod 644 /home/sandbox/.profile 2>/dev/null || true
 
 # Install Hermes Agent source as root (puts source in /root/.hermes/hermes-agent/).
 # We only need the source — we'll create a fresh venv as the sandbox user below.
